@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newsletter Automática</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-4">Newsletter Automática</h1>
+        <button id="fetchNews" class="px-4 py-2 bg-blue-500 text-white rounded">Obtener Noticias</button>
+        <ul id="newsList" class="mt-4 space-y-2"></ul>
+    </div>
+
+    <script>
+        document.getElementById('fetchNews').addEventListener('click', async () => {
+            const query = ["real estate España", "bolsa", "criptomonedas", "pádel", "fútbol", "actualidad", "política", "sucesos"];
+            const apiKey = "TU_API_KEY"; // Necesitas una API key de un servicio como NewsAPI
+            const newsList = document.getElementById('newsList');
+            newsList.innerHTML = "<p>Cargando noticias...</p>";
+            
+            try {
+                let articles = [];
+                for (let term of query) {
+                    let response = await fetch(`https://newsapi.org/v2/everything?q=${term}&language=es&apiKey=${apiKey}`);
+                    let data = await response.json();
+                    articles.push(...data.articles.slice(0, 2)); // Máx 2 por categoría
+                }
+                
+                newsList.innerHTML = articles.map(article => `
+                    <li class="p-2 border rounded">
+                        <a href="${article.url}" target="_blank" class="text-blue-500 font-semibold">${article.title}</a>
+                    </li>`).join('');
+                
+                enviarCorreo(articles);
+            } catch (error) {
+                newsList.innerHTML = "<p>Error al cargar noticias</p>";
+                console.error(error);
+            }
+        });
+        
+        function enviarCorreo(articles) {
+            const emailBody = articles.map(a => `${a.title} - ${a.url}`).join('\n');
+            
+            fetch('https://api.emailservice.com/send', { // Sustituye con tu servicio de envío de emails
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: "ignaciopardomuzas@gmail.com",
+                    subject: "Tu newsletter diaria",
+                    body: emailBody
+                })
+            }).then(res => res.json()).then(data => console.log("Email enviado", data));
+        }
+    </script>
+</body>
+</html>

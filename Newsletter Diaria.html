@@ -28,10 +28,22 @@
                     articles.push(...data.articles.slice(0, 2)); // Máx 2 por categoría
                 }
                 
-                newsList.innerHTML = articles.map(article => `
-                    <li class="p-2 border rounded">
-                        <a href="${article.url}" target="_blank" class="text-blue-500 font-semibold">${article.title}</a>
-                    </li>`).join('');
+                newsList.innerHTML = articles.map(article => {
+                    const text = `${article.description || ""} ${article.content || ""}`.trim();
+                    const sentences = text
+                        ? text.replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/).slice(0, 3).join(' ')
+                        : "Resumen no disponible.";
+
+                    return `
+                        <li class="p-3 border rounded">
+                            <a href="${article.url}" target="_blank" class="text-blue-500 font-semibold block">
+                                ${article.title}
+                            </a>
+                            <p class="text-sm text-gray-600 mt-1">${sentences}</p>
+                        </li>
+                    `;
+                }).join('');
+
                 
                 enviarCorreo(articles);
             } catch (error) {

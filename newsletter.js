@@ -13,22 +13,84 @@ console.log(`NEWSAPI_KEY: ${apiKey ? "OK" : "FALTA"}`);
 console.log(`EMAIL_USER: ${emailUser ? "OK" : "FALTA"}`);
 console.log(`EMAIL_DESTINO: ${emailDestino ? "OK" : "FALTA"}`);
 
+function getYesterdayRange() {
+    const now = new Date();
+
+    const yesterdayStart = new Date(now);
+    yesterdayStart.setDate(now.getDate() - 1);
+    yesterdayStart.setHours(0, 0, 0, 0);
+
+    const yesterdayEnd = new Date(now);
+    yesterdayEnd.setDate(now.getDate() - 1);
+    yesterdayEnd.setHours(23, 59, 59, 999);
+
+    return {
+        from: yesterdayStart.toISOString(),
+        to: yesterdayEnd.toISOString()
+    };
+}
+
 async function obtenerNoticias() {
     console.log("📡 Buscando noticias...");
-    const query = ["real estate España", "bolsa", "criptomonedas", "pádel", "fútbol", "actualidad", "política", "sucesos"];
+    const query = [
+        "real estate España",
+        "bolsa",
+        "criptomonedas",
+        "pádel",
+        "fútbol",
+        "política",
+        "sucesos en España",
+        "sucesos en Valencia",
+        "tecnología",
+        "Inteligencia Artificial",
+        "innovación empresarial España"
+    ];
+
+    const { from, to } = getYesterdayRange();
     let articles = [];
+
+    console.log("QUERIES ACTIVAS:", query);
 
     for (let term of query) {
         try {
-            let response = await axios.get(`https://newsapi.org/v2/everything?q=${term}&language=es&apiKey=${apiKey}`);
+            const response = await axios.get(
+                "https://newsapi.org/v2/everything",
+                {
+                    params: {
+                        q: term,
+                        language: "es",
+                        from,
+                        to,
+                        sortBy: "publishedAt",
+                        pageSize: 5,
+                        apiKey
+                    }
+                }
+            );
+
             console.log(`✅ Recibidas ${response.data.articles.length} noticias para ${term}`);
             articles.push(...response.data.articles.slice(0, 2));
+
         } catch (error) {
-            console.error(`⚠️ Error obteniendo noticias para ${term}:`, error.response ? error.response.data : error.message);
+            console.error(
+                `⚠️ Error obteniendo noticias para ${term}:`,
+                error.response ? error.response.data : error.message
+            );
         }
     }
 
-    return articles;
+    // 🔁 Deduplicar por URL
+    const uniqueArticles = [];
+    const seenUrls = new Set();
+
+    for (const article of articles) {
+        if (article.url && !seenUrls.has(article.url)) {
+            seenUrls.add(article.url);
+            uniqueArticles.push(article);
+        }
+    }
+
+    return uniqueArticles;
 }
 
 async function enviarCorreo(articles) {
